@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SevaGhar — Maid Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f0f4f8;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: white;
+    border-radius: 20px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  }
+  .logo { text-align: center; margin-bottom: 24px; }
+  .logo h1 { font-size: 26px; font-weight: 700; color: #1a6b3c; }
+  .logo p { font-size: 13px; color: #888; margin-top: 4px; }
+  .section { display: none; }
+  .section.active { display: block; }
+  label { font-size: 13px; color: #555; display: block; margin-bottom: 6px; font-weight: 500; }
+  input[type="text"], input[type="number"] {
+    width: 100%; padding: 13px 16px;
+    border: 1.5px solid #e0e0e0; border-radius: 12px;
+    font-size: 16px; margin-bottom: 16px; outline: none;
+    transition: border .2s; color: #222;
+  }
+  input:focus { border-color: #1a6b3c; }
+  select {
+    width: 100%; padding: 13px 16px;
+    border: 1.5px solid #e0e0e0; border-radius: 12px;
+    font-size: 15px; margin-bottom: 16px; outline: none;
+    color: #222; background: white;
+  }
+  select:focus { border-color: #1a6b3c; }
+  .btn {
+    width: 100%; padding: 14px; border-radius: 12px;
+    border: none; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: opacity .2s, transform .1s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: #1a6b3c; color: white; }
+  .btn-danger { background: #e53935; color: white; margin-top: 12px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .status-box {
+    border-radius: 12px; padding: 14px 16px;
+    font-size: 13.5px; margin-bottom: 16px; line-height: 1.6;
+  }
+  .status-green { background: #e8f5e9; color: #1a6b3c; border: 1px solid #a5d6a7; }
+  .status-red { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+  .status-blue { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+  .live-dot {
+    display: inline-block; width: 10px; height: 10px;
+    border-radius: 50%; background: #1a6b3c;
+    margin-right: 6px; animation: pulse 1.2s infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .info-row {
+    display: flex; justify-content: space-between;
+    font-size: 13px; color: #666;
+    padding: 6px 0; border-bottom: 1px solid #f0f0f0;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-val { font-weight: 600; color: #222; }
+  .timer {
+    font-size: 32px; font-weight: 700; color: #1a6b3c;
+    text-align: center; padding: 10px 0; letter-spacing: 2px;
+  }
+  .small-text { font-size: 12px; color: #999; text-align: center; margin-top: 10px; }
+  h2 { font-size: 18px; color: #222; margin-bottom: 16px; font-weight: 600; }
+  .success-icon { font-size: 52px; text-align: center; margin: 10px 0 16px; }
+  .info-block { background: #f9f9f9; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+  .ntfy-setup { background: #fff8e1; border: 1px solid #ffe082; border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 13px; color: #5d4037; line-height: 1.7; }
+  .ntfy-setup b { color: #3e2723; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <h1>SevaGhar</h1>
+    <p>Ghar Ki Seva — Professional & Trusted</p>
+  </div>
+
+  <!-- STEP 1: Maid selects name + enters OTP -->
+  <div class="section active" id="step1">
+    <h2>Kaam Shuru Karo</h2>
+    <label>Apna naam chunein</label>
+    <select id="maidName">
+      <option value="">— Maid chunein —</option>
+      <option value="Sunita">Sunita</option>
+      <option value="Rekha">Rekha</option>
+      <option value="Pooja">Pooja</option>
+    </select>
+    <label>Customer ka OTP daalein</label>
+    <input type="number" id="otpInput" placeholder="4-digit OTP" />
+    <div id="otpError" class="status-box status-red" style="display:none"></div>
+    <button class="btn btn-primary" onclick="verifyOTP()">Kaam Shuru Karo</button>
+    <p class="small-text">OTP customer ke WhatsApp par bheja gaya hai</p>
+  </div>
+
+  <!-- STEP 2: Work in progress -->
+  <div class="section" id="step2">
+    <h2>Kaam Chal Raha Hai</h2>
+    <div class="status-box status-green">
+      <span class="live-dot"></span><strong>Live location track ho rahi hai</strong>
+    </div>
+    <div class="info-block">
+      <div class="info-row"><span>Maid</span><span class="info-val" id="displayMaid">—</span></div>
+      <div class="info-row"><span>Shuru ka time</span><span class="info-val" id="startTime">—</span></div>
+      <div class="info-row"><span>Kaam ka time</span><span class="info-val"><div class="timer" id="timerDisplay">00:00</div></span></div>
+      <div class="info-row"><span>Location</span><span class="info-val" id="locStatus">Dhundh rahe hain...</span></div>
+    </div>
+    <div id="locationBox" class="status-box status-blue" style="display:none"></div>
+    <button class="btn btn-danger" onclick="completeWork()">Kaam Poora Ho Gaya</button>
+    <p class="small-text">Jab tak ye button na dabao, location jaati rahegi</p>
+  </div>
+
+  <!-- STEP 3: Complete -->
+  <div class="section" id="step3">
+    <div class="success-icon">✅</div>
+    <div class="status-box status-green" style="text-align:center">
+      <strong>Kaam Poora!</strong><br>
+      Aapka kaam record ho gaya.<br>
+      Malik ko notification pahunch gayi.
+    </div>
+    <div class="info-block">
+      <div class="info-row"><span>Maid</span><span class="info-val" id="doneMaid">—</span></div>
+      <div class="info-row"><span>Shuru</span><span class="info-val" id="doneStart">—</span></div>
+      <div class="info-row"><span>Khatam</span><span class="info-val" id="doneEnd">—</span></div>
+      <div class="info-row"><span>Total time</span><span class="info-val" id="doneTotal">—</span></div>
+    </div>
+    <button class="btn btn-primary" onclick="resetAll()">Naya Kaam Shuru Karo</button>
+  </div>
+</div>
+
+<script>
+// ============================================
+// CONFIG — sirf yahan badlo
+// ============================================
+const NTFY_TOPIC = "sevaghar_malik_alerts_9x7k2m";  // unique topic — change if you want
+const BOT_TOKEN  = "8851750351:AAGm3jgQ6lkmzYARL6D0bpXl-eQOM4mZpDI";
+const CHAT_ID    = "1140562160";
+
+// OTPs — aap change kar sakte ho
+const VALID_OTPS = {
+  "Sunita": "1234",
+  "Rekha":  "2345",
+  "Pooja":  "3456"
+};
+// ============================================
+
+let locationInterval = null;
+let timerInterval    = null;
+let startTimestamp   = null;
+let currentMaid      = "";
+let startTimeStr     = "";
+
+// ntfy.sh se notification bhejo (no CORS issue)
+async function sendNtfy(title, body) {
+  try {
+    await fetch("https://ntfy.sh/" + NTFY_TOPIC, {
+      method: "POST",
+      headers: {
+        "Title": title,
+        "Priority": "urgent",
+        "Tags": "house,maid"
+      },
+      body: body
+    });
+  } catch(e) { console.log("ntfy error", e); }
+}
+
+// Telegram location bhejo via ntfy proxy workaround — Google Maps link
+async function sendLocationNtfy(lat, lon, label) {
+  const mapsLink = "https://maps.google.com/?q=" + lat + "," + lon;
+  await sendNtfy(
+    "SevaGhar — " + label,
+    currentMaid + " ki location:\n" + mapsLink + "\n\nTime: " + new Date().toLocaleTimeString("hi-IN")
+  );
+}
+
+function getLocation(callback) {
+  if (!navigator.geolocation) {
+    document.getElementById("locStatus").textContent = "Location support nahi";
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => callback(pos.coords.latitude, pos.coords.longitude),
+    err => {
+      document.getElementById("locStatus").textContent = "Permission do — browser mein Allow karo";
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+function verifyOTP() {
+  const maid = document.getElementById("maidName").value;
+  const otp  = document.getElementById("otpInput").value.trim();
+  const err  = document.getElementById("otpError");
+
+  if (!maid) { err.textContent = "Pehle apna naam chunein."; err.style.display = "block"; return; }
+  if (!otp)  { err.textContent = "OTP daalein."; err.style.display = "block"; return; }
+  if (otp !== VALID_OTPS[maid]) {
+    err.textContent = "Galat OTP. Customer se dobara lo.";
+    err.style.display = "block"; return;
+  }
+
+  err.style.display = "none";
+  currentMaid   = maid;
+  startTimestamp = new Date();
+  startTimeStr  = startTimestamp.toLocaleTimeString("hi-IN", { hour: "2-digit", minute: "2-digit" });
+
+  document.getElementById("displayMaid").textContent = currentMaid;
+  document.getElementById("startTime").textContent   = startTimeStr;
+
+  showSection("step2");
+
+  // Notification bhejo
+  sendNtfy(
+    "KAAM SHURU — " + currentMaid,
+    "Maid: " + currentMaid + "\nTime: " + startTimeStr + "\nOTP verify ho gaya. Location ab aayegi."
+  );
+
+  // Pehli location turant bhejo
+  getLocation((lat, lon) => {
+    document.getElementById("locStatus").textContent = "Live ✅";
+    document.getElementById("locationBox").style.display = "block";
+    document.getElementById("locationBox").textContent =
+      "Location: " + lat.toFixed(5) + ", " + lon.toFixed(5);
+    sendLocationNtfy(lat, lon, "Kaam Shuru Location");
+  });
+
+  // Har 2 min mein location bhejo
+  locationInterval = setInterval(() => {
+    getLocation((lat, lon) => {
+      document.getElementById("locStatus").textContent = "Live ✅ " + new Date().toLocaleTimeString("hi-IN");
+      document.getElementById("locationBox").textContent =
+        "Location: " + lat.toFixed(5) + ", " + lon.toFixed(5);
+      sendLocationNtfy(lat, lon, "Live Location Update");
+    });
+  }, 120000);
+
+  // Timer
+  timerInterval = setInterval(() => {
+    const elapsed = Math.floor((new Date() - startTimestamp) / 1000);
+    const mins = String(Math.floor(elapsed / 60)).padStart(2, "0");
+    const secs = String(elapsed % 60).padStart(2, "0");
+    document.getElementById("timerDisplay").textContent = mins + ":" + secs;
+  }, 1000);
+}
+
+function completeWork() {
+  clearInterval(locationInterval);
+  clearInterval(timerInterval);
+
+  const endTime    = new Date();
+  const endTimeStr = endTime.toLocaleTimeString("hi-IN", { hour: "2-digit", minute: "2-digit" });
+  const elapsed    = Math.floor((endTime - startTimestamp) / 1000);
+  const mins       = Math.floor(elapsed / 60);
+  const secs       = elapsed % 60;
+  const totalStr   = mins + " min " + secs + " sec";
+
+  document.getElementById("doneMaid").textContent  = currentMaid;
+  document.getElementById("doneStart").textContent = startTimeStr;
+  document.getElementById("doneEnd").textContent   = endTimeStr;
+  document.getElementById("doneTotal").textContent = totalStr;
+
+  // Final notification
+  getLocation((lat, lon) => {
+    sendNtfy(
+      "KAAM POORA — " + currentMaid,
+      "Maid: " + currentMaid +
+      "\nShuru: " + startTimeStr +
+      "\nKhatam: " + endTimeStr +
+      "\nTotal: " + totalStr +
+      "\nAakhri location: https://maps.google.com/?q=" + lat + "," + lon
+    );
+  });
+
+  showSection("step3");
+}
+
+function resetAll() {
+  document.getElementById("maidName").value = "";
+  document.getElementById("otpInput").value = "";
+  document.getElementById("otpError").style.display  = "none";
+  document.getElementById("timerDisplay").textContent = "00:00";
+  document.getElementById("locStatus").textContent    = "Dhundh rahe hain...";
+  document.getElementById("locationBox").style.display = "none";
+  showSection("step1");
+}
+
+function showSection(id) {
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+</script>
+</body>
+</html>
